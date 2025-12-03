@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>点词·短语智慧记忆系统 - 测试页面</h1>
+    
+    <div class="test-section">
+        <h2>系统状态检查</h2>
+        <p>这个系统完全使用本地API，<strong>不依赖任何需要购买的第三方API</strong>。所有功能都在您的本地计算机上运行。</p>
+        <button onclick="testBackend()">测试后端连接</button>
+        <div id="backend-test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>快速开始</h2>
+        <p>如果您在主页面看到黑屏，请尝试以下步骤：</p>
+        <ol>
+            <li>确保后端服务正在运行（已自动启动）</li>
+            <li>使用 Chrome 或 Firefox 浏览器打开页面</li>
+            <li>尝试使用离线版本（已自动打开）</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h2>使用方法</h2>
+        <ul>
+            <li>在输入框中粘贴英文文章</li>
+            <li>点击"处理文章"按钮</li>
+            <li>点击单词或短语查看详细信息</li>
+        </ul>
+    </div>
+
+    <script>
+        function testBackend() {
+            const resultDiv = document.getElementById('backend-test-result');
+            resultDiv.innerHTML = '正在测试后端连接...';
+            
+            fetch('http://localhost:8080/api/tokenize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: 'Hello world' })
+            })
+            .then(response => {
+                if (response.ok) {
+                    resultDiv.innerHTML = '<span class="success">✓ 后端服务正常运行！</span>';
+                } else {
+                    resultDiv.innerHTML = '<span class="error">✗ 后端服务连接失败</span>';
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '<span class="error">✗ 网络错误：' + error.message + '</span>';
+            });
+        }
+    </script>
+</body>
+</html>

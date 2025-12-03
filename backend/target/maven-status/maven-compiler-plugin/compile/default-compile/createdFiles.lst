@@ -1,0 +1,8 @@
+com\hzlgou\WordPhraseMemoryApplication.class
+com\hzlgou\service\impl\WordPhraseServiceImpl.class
+com\hzlgou\service\WordPhraseService.class
+com\hzlgou\controller\WordPhraseController.class
+com\hzlgou\model\Word.class
+com\hzlgou\repository\PhraseRepository.class
+com\hzlgou\repository\WordRepository.class
+com\hzlgou\model\Phrase.class
