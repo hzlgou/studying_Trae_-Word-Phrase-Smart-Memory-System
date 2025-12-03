@@ -161,7 +161,7 @@ public class WordPhraseServiceImpl implements WordPhraseService {
     }
 
     @Override
-    public List<Word> searchWords(String keyword, String searchType) {
+    public List<Map<String, Object>> searchWords(String keyword, String searchType) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return Collections.emptyList();
         }
@@ -178,10 +178,19 @@ public class WordPhraseServiceImpl implements WordPhraseService {
                 searchResults = wordTrie.searchBySubstring(lowercaseKeyword);
                 break;
             case "exact":
-                if (wordTrie.search(lowercaseKeyword)) {
+                // 首先尝试从数据库中查找精确匹配的单词
+                Optional<Word> wordOptional = wordRepository.findByWord(keyword);
+                if (!wordOptional.isPresent()) {
+                    // 如果没有找到，尝试小写查找
+                    wordOptional = wordRepository.findByWord(lowercaseKeyword);
+                }
+                
+                if (wordOptional.isPresent()) {
+                    Word word = wordOptional.get();
                     searchResults = new ArrayList<>();
                     Map<String, Object> exactMatch = new HashMap<>();
-                    exactMatch.put("word", lowercaseKeyword);
+                    exactMatch.put("word", word.getWord());
+                    exactMatch.put("id", word.getId());
                     searchResults.add(exactMatch);
                 } else {
                     searchResults = Collections.emptyList();
@@ -192,13 +201,8 @@ public class WordPhraseServiceImpl implements WordPhraseService {
                 searchResults = wordTrie.searchByPrefix(lowercaseKeyword);
         }
         
-        // 将匹配的单词字符串转换为Word对象
-        return searchResults.stream()
-                .map(result -> (String) result.get("word"))
-                .map(wordRepository::findByWord)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
+        // 丰富搜索结果信息
+        return enrichWordSearchResults(searchResults);
     }
     
     // 从缓存获取单词

@@ -243,7 +243,7 @@ public class WordPhraseController {
      * @return 匹配的单词列表
      */
     @GetMapping("/search/words")
-    public List<Word> searchWords(@RequestParam String keyword, @RequestParam(required = false, defaultValue = "prefix") String type) {
+    public List<Map<String, Object>> searchWords(@RequestParam String keyword, @RequestParam(required = false, defaultValue = "prefix") String type) {
         return wordPhraseService.searchWords(keyword, type);
     }
 }

@@ -6,6 +6,7 @@ C:\Trae\English\backend\src\main\java\com\hzlgou\config\AIConfig.java
 C:\Trae\English\backend\src\main\java\com\hzlgou\config\CORSConfig.java
 C:\Trae\English\backend\src\main\java\com\hzlgou\repository\WordRepository.java
 C:\Trae\English\backend\src\main\java\com\hzlgou\service\WordPhraseService.java
+C:\Trae\English\backend\src\main\java\com\hzlgou\util\Trie.java
 C:\Trae\English\backend\src\main\java\com\hzlgou\model\Word.java
 C:\Trae\English\backend\src\main\java\com\hzlgou\controller\StaticContentController.java
 C:\Trae\English\backend\src\main\java\com\hzlgou\repository\PhraseRepository.java
