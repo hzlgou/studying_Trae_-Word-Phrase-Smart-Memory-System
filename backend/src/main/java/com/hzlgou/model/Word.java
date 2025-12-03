@@ -19,6 +19,8 @@ public class Word {
     private String derivation;
     
     private String tip;
+    
+    private String note;
 
     public Long getId() {
         return id;
@@ -66,5 +68,13 @@ public class Word {
 
     public void setTip(String tip) {
         this.tip = tip;
+    }
+    
+    public String getNote() {
+        return note;
+    }
+    
+    public void setNote(String note) {
+        this.note = note;
     }
 }

@@ -13,9 +13,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/api")
 public class WordPhraseController {
     
     @Autowired
@@ -46,13 +47,59 @@ public class WordPhraseController {
         return response;
     }
     
+    @PostMapping("/process-article")
+    public Map<String, Object> processArticle(@RequestBody Map<String, String> request) {
+        String text = request.getOrDefault("text", "");
+        return wordPhraseService.processArticle(text);
+    }
+    
+    // 单词本相关接口
+    @PostMapping("/wordbook/toggle/{wordId}")
+    public Map<String, Object> toggleWordBookMark(@PathVariable Long wordId) {
+        return wordPhraseService.toggleWordBookMark(wordId);
+    }
+    
+    @GetMapping("/wordbook")
+    public List<Map<String, Object>> getWordBook() {
+        return wordPhraseService.getWordBook();
+    }
+    
+    @PostMapping("/wordbook/note/{wordId}")
+    public Map<String, Object> updateWordNote(@PathVariable Long wordId, @RequestBody Map<String, String> request) {
+        String note = request.getOrDefault("note", "");
+        return wordPhraseService.updateWordNote(wordId, note);
+    }
+    
     /**
      * 获取单词/短语信息接口
      */
     @PostMapping("/phrase")
     public Map<String, Object> getPhraseInfo(@RequestBody Map<String, Object> request) {
-        List<String> tokens = (List<String>) request.get("tokens");
-        Integer index = (Integer) request.get("index");
+        // 安全地转换tokens为List<String>
+        List<String> tokens = new ArrayList<>();
+        Object tokensObj = request.get("tokens");
+        if (tokensObj instanceof List) {
+            List<?> list = (List<?>) tokensObj;
+            for (Object item : list) {
+                if (item instanceof String) {
+                    tokens.add((String) item);
+                }
+            }
+        }
+        
+        // 安全地转换index为Integer
+        Integer index = 0;
+        Object indexObj = request.get("index");
+        if (indexObj instanceof Integer) {
+            index = (Integer) indexObj;
+        } else if (indexObj != null) {
+            try {
+                index = Integer.parseInt(indexObj.toString());
+            } catch (NumberFormatException e) {
+                // 使用默认值0
+            }
+        }
+        
         return wordPhraseService.getPhraseOrWordInfo(tokens, index);
     }
     
@@ -136,15 +183,51 @@ public class WordPhraseController {
     
     @PostMapping("/ai/build-word-list")
     public List<Word> buildWordList(@RequestBody Map<String, Object> request) {
-        String text = request.get("text").toString();
-        int limit = Integer.parseInt(request.getOrDefault("limit", "50").toString());
+        // 安全地获取text参数
+        String text = "";
+        Object textObj = request.get("text");
+        if (textObj instanceof String) {
+            text = (String) textObj;
+        }
+        
+        // 安全地获取limit参数
+        int limit = 50;
+        Object limitObj = request.getOrDefault("limit", "50");
+        if (limitObj instanceof Integer) {
+            limit = (Integer) limitObj;
+        } else {
+            try {
+                limit = Integer.parseInt(limitObj.toString());
+            } catch (NumberFormatException e) {
+                // 使用默认值50
+            }
+        }
+        
         return aiService.buildHighFrequencyWordList(text, limit);
     }
     
     @PostMapping("/ai/build-phrase-list")
     public List<Phrase> buildPhraseList(@RequestBody Map<String, Object> request) {
-        String text = request.get("text").toString();
-        int limit = Integer.parseInt(request.getOrDefault("limit", "50").toString());
+        // 安全地获取text参数
+        String text = "";
+        Object textObj = request.get("text");
+        if (textObj instanceof String) {
+            text = (String) textObj;
+        }
+        
+        // 安全地获取limit参数
+        int limit = 50;
+        Object limitObj = request.getOrDefault("limit", "50");
+        if (limitObj instanceof Integer) {
+            limit = (Integer) limitObj;
+        } else {
+            try {
+                limit = Integer.parseInt(limitObj.toString());
+            } catch (NumberFormatException e) {
+                // 使用默认值50
+            }
+        }
+        
         return aiService.buildHighFrequencyPhraseList(text, limit);
     }
     

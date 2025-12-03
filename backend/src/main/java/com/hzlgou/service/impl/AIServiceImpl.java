@@ -234,7 +234,7 @@ public class AIServiceImpl implements AIService {
             String response = callDeepSeekAPI(prompt);
             
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(response, Map.class);
+            return mapper.readValue(response, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
             e.printStackTrace();
             // 如果API调用失败，返回模拟数据
@@ -285,7 +285,7 @@ public class AIServiceImpl implements AIService {
             String response = callDeepSeekAPI(prompt);
             
             ObjectMapper mapper = new ObjectMapper();
-            return mapper.readValue(response, Map.class);
+            return mapper.readValue(response, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
             e.printStackTrace();
             // 如果API调用失败，返回模拟数据

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点词·短语智慧记忆系统 - 离线版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+
+        .input-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .char-count {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .article-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .token {
+            display: inline-block;
+            padding: 2px 4px;
+            cursor: pointer;
+            border-radius: 3px;
+            margin: 0 2px;
+        }
+
+        .token:hover {
+            background-color: #e8f4f8;
+            color: #2980b9;
+        }
+
+        .token.selected {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .token.phrase {
+            border-bottom: 2px solid #e74c3c;
+        }
+
+        #info-card {
+            position: absolute;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            min-width: 300px;
+            max-width: 400px;
+            z-index: 1000;
+            display: none;
+        }
+
+        #info-card.show {
+            display: block;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .card-text {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #7f8c8d;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .card-content {
+            margin-bottom: 15px;
+        }
+
+        .pronunciation {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        .pronunciation-text {
+            font-size: 16px;
+            margin-right: 10px;
+            font-family: 'Courier New', monospace;
+            color: #7f8c8d;
+        }
+
+        .play-btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+        }
+
+        .play-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .definition {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .definition-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .derivation {
+            margin-bottom: 15px;
+        }
+
+        .derivation-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .derivation-list {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+
+        .derivation-list li {
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .derivation-list li::before {
+            content: '→';
+            position: absolute;
+            left: -15px;
+            color: #3498db;
+        }
+
+        .tip {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #f39c12;
+            font-style: italic;
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .loading {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            #info-card {
+                min-width: 280px;
+                max-width: calc(100vw - 20px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>点词·短语智慧记忆系统 - 离线版</h1>
+            <p class="subtitle">阅读文章，点击单词或短语，获取详细信息</p>
+        </header>
+
+        <div class="input-section">
+            <textarea id="article-input" placeholder="请粘贴英文文章..." maxlength="50000">The meeting will take place tomorrow. We are looking forward to seeing you there. Please make sure everything is in place before the meeting starts.</textarea>
+            <div class="input-actions">
+                <button id="process-btn">处理文章</button>
+                <span class="char-count">0/50000</span>
+            </div>
+        </div>
+
+        <div class="article-section">
+            <div id="article-content"></div>
+        </div>
+
+        <div id="info-card">
+            <div class="card-header">
+                <span class="card-text"></span>
+                <button class="close-btn" onclick="closeInfoCard()">×</button>
+            </div>
+            <div id="card-content">
+                <!-- 动态内容 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const articleInput = document.getElementById('article-input');
+        const processBtn = document.getElementById('process-btn');
+        const articleContent = document.getElementById('article-content');
+        const charCount = document.querySelector('.char-count');
+        const infoCard = document.getElementById('info-card');
+        const cardText = document.querySelector('.card-text');
+        const cardContent = document.getElementById('card-content');
+
+        // 全局变量
+        let tokens = [];
+        let currentTokens = [];
+
+        // 本地词库
+        const wordDatabase = {
+            "take": {
+                "text": "take",
+                "type": "word",
+                "pronunciation": "/teɪk/",
+                "definition": "拿，取；接受；花费",
+                "derivation": ["take → retake", "take → uptake"],
+                "tip": "take表示拿取，take notes就是拿笔记下"
+            },
+            "place": {
+                "text": "place",
+                "type": "word",
+                "pronunciation": "/pleɪs/",
+                "definition": "地方；位置；放置",
+                "derivation": ["place → placement"],
+                "tip": "place是地方，in place就是在正确的地方"
+            },
+            "meeting": {
+                "text": "meeting",
+                "type": "word",
+                "pronunciation": "/ˈmiːtɪŋ/",
+                "definition": "会议；会面",
+                "derivation": ["meet → meeting"],
+                "tip": "meet是见面，meeting就是见面的地方"
+            },
+            "will": {
+                "text": "will",
+                "type": "word",
+                "pronunciation": "/wɪl/",
+                "definition": "将，将要；意志",
+                "derivation": ["will → willing"],
+                "tip": "will表示将会，也可以作名词表示意志"
+            },
+            "tomorrow": {
+                "text": "tomorrow",
+                "type": "word",
+                "pronunciation": "/təˈmɒrəʊ/",
+                "definition": "明天",
+                "derivation": [],
+                "tip": "tomorrow是明天，由to + morrow组成"
+            },
+            "we": {
+                "text": "we",
+                "type": "word",
+                "pronunciation": "/wiː/",
+                "definition": "我们",
+                "derivation": [],
+                "tip": "we是第一人称复数主语"
+            },
+            "are": {
+                "text": "are",
+                "type": "word",
+                "pronunciation": "/ɑː(r)/",
+                "definition": "是（be动词的复数形式）",
+                "derivation": [],
+                "tip": "are用于复数主语"
+            },
+            "looking": {
+                "text": "looking",
+                "type": "word",
+                "pronunciation": "/ˈlʊkɪŋ/",
+                "definition": "看（look的现在分词）",
+                "derivation": ["look → looking"],
+                "tip": "looking是look的现在分词形式"
+            },
+            "forward": {
+                "text": "forward",
+                "type": "word",
+                "pronunciation": "/ˈfɔːwəd/",
+                "definition": "向前；提前",
+                "derivation": [],
+                "tip": "forward表示向前的方向"
+            },
+            "to": {
+                "text": "to",
+                "type": "word",
+                "pronunciation": "/tuː/",
+                "definition": "到；向；对于",
+                "derivation": [],
+                "tip": "to是常用的介词和不定式符号"
+            },
+            "seeing": {
+                "text": "seeing",
+                "type": "word",
+                "pronunciation": "/ˈsiːɪŋ/",
+                "definition": "看见（see的现在分词）",
+                "derivation": ["see → seeing"],
+                "tip": "seeing是see的现在分词形式"
+            },
+            "you": {
+                "text": "you",
+                "type": "word",
+                "pronunciation": "/juː/",
+                "definition": "你；你们",
+                "derivation": [],
+                "tip": "you是第二人称代词"
+            },
+            "there": {
+                "text": "there",
+                "type": "word",
+                "pronunciation": "/ðeə(r)/",
+                "definition": "在那里；那里",
+                "derivation": [],
+                "tip": "there表示地点"
+            },
+            "please": {
+                "text": "please",
+                "type": "word",
+                "pronunciation": "/pliːz/",
+                "definition": "请；使高兴",
+                "derivation": [],
+                "tip": "please用于礼貌请求"
+            },
+            "make": {
+                "text": "make",
+                "type": "word",
+                "pronunciation": "/meɪk/",
+                "definition": "做；制造；使",
+                "derivation": ["make → making", "make → maker"],
+                "tip": "make表示制作或使某事发生"
+            },
+            "sure": {
+                "text": "sure",
+                "type": "word",
+                "pronunciation": "/ʃʊə(r)/",
+                "definition": "确信的；肯定的",
+                "derivation": [],
+                "tip": "sure表示确定"
+            },
+            "everything": {
+                "text": "everything",
+                "type": "word",
+                "pronunciation": "/ˈevriθɪŋ/",
+                "definition": "一切；所有事物",
+                "derivation": [],
+                "tip": "everything表示所有东西"
+            },
+            "is": {
+                "text": "is",
+                "type": "word",
+                "pronunciation": "/ɪz/",
+                "definition": "是（be动词的单数形式）",
+                "derivation": [],
+                "tip": "is用于单数主语"
+            },
+            "in": {
+                "text": "in",
+                "type": "word",
+                "pronunciation": "/ɪn/",
+                "definition": "在...里；在...内",
+                "derivation": [],
+                "tip": "in表示位置或状态"
+            },
+            "before": {
+                "text": "before",
+                "type": "word",
+                "pronunciation": "/bɪˈfɔː(r)/",
+                "definition": "在...之前",
+                "derivation": [],
+                "tip": "before表示时间顺序"
+            },
+            "the": {
+                "text": "the",
+                "type": "word",
+                "pronunciation": "/ðə/",
+                "definition": "这；那",
+                "derivation": [],
+                "tip": "the是定冠词"
+            },
+            "starts": {
+                "text": "starts",
+                "type": "word",
+                "pronunciation": "/stɑːts/",
+                "definition": "开始（start的第三人称单数）",
+                "derivation": ["start → starts"],
+                "tip": "starts是start的第三人称单数形式"
+            }
+        };
+
+        // 本地短语库
+        const phraseDatabase = {
+            "take place": {
+                "text": "take place",
+                "type": "phrase",
+                "pronunciation": "/teɪk pleɪs/",
+                "definition": "发生；举行",
+                "derivation": ["take → retake, uptake", "place → placement"],
+                "tip": "take了place，活动才有场所"
+            },
+            "in place": {
+                "text": "in place",
+                "type": "phrase",
+                "pronunciation": "/ɪn pleɪs/",
+                "definition": "在适当的位置；准备就绪",
+                "derivation": ["in → inside", "place → placement"],
+                "tip": "in place表示在正确的位置"
+            },
+            "look forward to": {
+                "text": "look forward to",
+                "type": "phrase",
+                "pronunciation": "/lʊk ˈfɔːwəd tuː/",
+                "definition": "期待；盼望",
+                "derivation": ["look → looking", "forward → forwards", "to → too"],
+                "tip": "look forward to表示期待"
+            }
+        };
+
+        // 更新字符计数
+        articleInput.addEventListener('input', function() {
+            charCount.textContent = `${this.value.length}/50000`;
+        });
+
+        // 初始化字符计数
+        charCount.textContent = `${articleInput.value.length}/50000`;
+
+        // 处理文章
+        processBtn.addEventListener('click', async function() {
+            const article = articleInput.value.trim();
+            if (!article) {
+                alert('请输入文章内容');
+                return;
+            }
+
+            // 处理文章
+            await processArticle(article);
+        });
+
+        // 处理文章的异步函数
+        async function processArticle(article) {
+            try {
+                // 显示加载状态
+                articleContent.innerHTML = '<div class="loading">正在处理文章...</div>';
+
+                // 本地分词
+                const tokenizeResult = tokenize(article);
+                tokens = tokenizeResult.tokens;
+
+                // 显示分词结果
+                renderArticle(tokens);
+            } catch (error) {
+                console.error('处理文章时出错:', error);
+                articleContent.innerHTML = '<div style="color: red;">处理文章时出错，请稍后重试</div>';
+            }
+        }
+
+        // 本地分词函数
+        function tokenize(text) {
+            // 移除多余空格和换行
+            text = text.replace(/\s+/g, ' ').trim();
+            // 按单词和标点符号分词
+            const tokenPattern = /\w+|[.,!?;:'"()\[\]{}\-]/g;
+            const matches = text.match(tokenPattern);
+            
+            // 构建tokens数组
+            const tokens = (matches || []).map(text => ({
+                text: text,
+                type: 'word'
+            }));
+            
+            return { tokens: tokens };
+        }
+
+        // 渲染文章
+        function renderArticle(tokens) {
+            articleContent.innerHTML = '';
+            
+            tokens.forEach((token, index) => {
+                const span = document.createElement('span');
+                span.className = `token ${token.type || 'word'}`;
+                span.textContent = token.text;
+                span.dataset.index = index;
+                
+                // 添加点击事件
+                span.addEventListener('click', function() {
+                    // 移除之前的选中状态
+                    document.querySelectorAll('.token.selected').forEach(el => {
+                        el.classList.remove('selected');
+                    });
+                    
+                    // 添加选中状态
+                    this.classList.add('selected');
+                    
+                    // 显示信息卡片
+                    showInfoCard(index, this.getBoundingClientRect());
+                });
+                
+                articleContent.appendChild(span);
+                
+                // 添加空格
+                if (index < tokens.length - 1) {
+                    articleContent.appendChild(document.createTextNode(' '));
+                }
+            });
+        }
+
+        // 显示信息卡片
+        async function showInfoCard(index, rect) {
+            try {
+                // 显示加载状态
+                cardText.textContent = '加载中...';
+                cardContent.innerHTML = '<div class="loading">正在获取信息...</div>';
+
+                // 本地获取信息
+                const info = getPhraseOrWordInfo(tokens.map(t => t.text), index);
+
+                // 更新卡片内容
+                cardText.textContent = info.text;
+                
+                // 构建卡片内容
+                let content = '';
+                
+                // 添加读音
+                content += '<div class="pronunciation">';
+                content += `<span class="pronunciation-text">${info.pronunciation}</span>`;
+                content += '<button class="play-btn" onclick="playPronunciation()">▶</button>';
+                content += '</div>';
+                
+                // 添加释义
+                if (info.definition) {
+                    content += '<div class="definition">';
+                    content += `<div class="definition-title">释义</div>`;
+                    content += `<div>${info.definition}</div>`;
+                    content += '</div>';
+                }
+                
+                // 添加派生词
+                if (info.derivation && info.derivation.length > 0) {
+                    content += '<div class="derivation">';
+                    content += '<div class="derivation-title">派生词</div>';
+                    content += '<ul class="derivation-list">';
+                    info.derivation.forEach(d => {
+                        content += `<li>${d}</li>`;
+                    });
+                    content += '</ul>';
+                    content += '</div>';
+                }
+                
+                // 添加口诀
+                if (info.tip) {
+                    content += `<div class="tip">${info.tip}</div>`;
+                }
+                
+                cardContent.innerHTML = content;
+
+                // 定位卡片
+                positionInfoCard(rect);
+            } catch (error) {
+                console.error('获取信息时出错:', error);
+                cardText.textContent = '错误';
+                cardContent.innerHTML = '<div style="color: red;">获取信息失败，请稍后重试</div>';
+                positionInfoCard(rect);
+            }
+        }
+
+        // 本地获取单词/短语信息
+        function getPhraseOrWordInfo(tokenTexts, index) {
+            // 1. 尝试匹配最长短语（3-gram, 2-gram）
+            let phrase3Gram = null;
+            if (index - 1 >= 0 && index + 1 < tokenTexts.length) {
+                phrase3Gram = tokenTexts[index - 1] + ' ' + tokenTexts[index] + ' ' + tokenTexts[index + 1];
+            }
+            
+            if (phrase3Gram && phraseDatabase[phrase3Gram.toLowerCase()]) {
+                return phraseDatabase[phrase3Gram.toLowerCase()];
+            }
+            
+            let phrase2GramLeft = null;
+            if (index - 1 >= 0) {
+                phrase2GramLeft = tokenTexts[index - 1] + ' ' + tokenTexts[index];
+            }
+            
+            if (phrase2GramLeft && phraseDatabase[phrase2GramLeft.toLowerCase()]) {
+                return phraseDatabase[phrase2GramLeft.toLowerCase()];
+            }
+            
+            let phrase2GramRight = null;
+            if (index + 1 < tokenTexts.length) {
+                phrase2GramRight = tokenTexts[index] + ' ' + tokenTexts[index + 1];
+            }
+            
+            if (phrase2GramRight && phraseDatabase[phrase2GramRight.toLowerCase()]) {
+                return phraseDatabase[phrase2GramRight.toLowerCase()];
+            }
+            
+            // 2. 匹配单词
+            const word = tokenTexts[index].toLowerCase();
+            if (wordDatabase[word]) {
+                return wordDatabase[word];
+            }
+            
+            // 3. 兜底返回
+            return {
+                text: tokenTexts[index],
+                type: 'unknown',
+                pronunciation: '未知',
+                definition: '暂无释义',
+                derivation: [],
+                tip: '暂无记忆口诀'
+            };
+        }
+
+        // 定位信息卡片
+        function positionInfoCard(rect) {
+            const cardRect = infoCard.getBoundingClientRect();
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            // 计算位置，确保卡片在视窗内
+            let left = rect.left + (rect.width - cardRect.width) / 2;
+            let top = rect.top - cardRect.height - 10;
+
+            // 调整左右位置
+            if (left < 10) left = 10;
+            if (left + cardRect.width > windowWidth - 10) left = windowWidth - cardRect.width - 10;
+
+            // 调整上下位置
+            if (top < 10) top = rect.bottom + 10;
+            if (top + cardRect.height > windowHeight - 10) top = windowHeight - cardRect.height - 10;
+
+            infoCard.style.left = `${left}px`;
+            infoCard.style.top = `${top}px`;
+            infoCard.classList.add('show');
+        }
+
+        // 关闭信息卡片
+        function closeInfoCard() {
+            infoCard.classList.remove('show');
+            // 移除所有选中状态
+            document.querySelectorAll('.token.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+        }
+
+        // 播放读音（占位符）
+        function playPronunciation() {
+            console.log('播放读音功能待实现');
+        }
+
+        // 点击空白处关闭卡片
+        document.addEventListener('click', function(e) {
+            if (!infoCard.contains(e.target) && !e.target.classList.contains('token')) {
+                closeInfoCard();
+            }
+        });
+
+        // 页面加载时自动处理示例文章
+        window.addEventListener('load', function() {
+            processArticle(articleInput.value);
+        });
+    </script>
+</body>
+</html>

@@ -401,6 +401,20 @@
                     <strong>记忆口诀：</strong>
                     <span id="cardTip"></span>
                 </div>
+                
+                <!-- 单词本功能 -->
+                <div class="wordbook-features" style="margin-top: 15px; padding: 15px; background-color: #f8f9fa; border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span id="wordbook-status">未加入单词本</span>
+                        <button id="toggle-wordbook" class="wordbook-button" style="background-color: #2ecc71; padding: 6px 12px; border: none; border-radius: 4px; color: white; cursor: pointer;">加入单词本</button>
+                    </div>
+                    <div>
+                        <div style="margin-bottom: 5px;"><strong>笔记：</strong></div>
+                        <textarea id="word-note" rows="3" cols="30" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
+                        <button id="save-note" class="save-note-button" style="margin-top: 5px; background-color: #3498db; padding: 6px 12px; border: none; border-radius: 4px; color: white; cursor: pointer;">保存笔记</button>
+                    </div>
+                </div>
+                
                 <!-- AI二次查询纠错按钮 -->
                 <div class="ai-correction" style="margin-top: 15px;">
                     <button id="ai-correct-btn" class="ai-correct-button" style="background-color: #e74c3c; padding: 8px 16px; border: none; border-radius: 4px; color: white; cursor: pointer; transition: background-color 0.3s;">AI纠错查询</button>
@@ -442,17 +456,18 @@
                 return;
             }
             
-            // 调用后端API进行分词
+            // 调用后端API进行文章处理（分词+翻译）
             processArticle(inputText);
         });
         
-        // 处理文章（调用后端API分词）
+        // 处理文章（调用后端API分词和翻译）
         async function processArticle(text) {
             try {
                 // 显示加载状态
                 outputSection.innerHTML = '<div class="loading">正在处理文章...</div>';
+                document.getElementById('translationContent').innerHTML = '<div class="loading">正在翻译...</div>';
 
-                const response = await fetch('http://localhost:8080/api/tokenize', {
+                const response = await fetch('http://localhost:8080/api/process-article', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -464,12 +479,17 @@
                     const result = await response.json();
                     tokens = result.tokens;
                     displayTokens(tokens);
+                    
+                    // 更新全文翻译
+                    if (result.translation) {
+                        document.getElementById('translationContent').innerHTML = `<p>${result.translation}</p>`;
+                    }
                 } else {
-                    alert('分词失败，请稍后重试');
+                    alert('文章处理失败，请稍后重试');
                 }
             } catch (error) {
-                console.error('分词API调用失败:', error);
-                alert('分词失败，请检查网络连接');
+                console.error('文章处理API调用失败:', error);
+                alert('文章处理失败，请检查网络连接');
             }
         }
         
@@ -570,11 +590,29 @@
                     } else {
                         cardTip.textContent = '暂无记忆口诀';
                     }
+                    
+                    // 更新单词本信息
+                    currentWordId = wordInfo.id;
+                    if (wordInfo.isMarked) {
+                        updateWordbookUI(true);
+                    } else {
+                        updateWordbookUI(false);
+                    }
+                    
+                    // 更新笔记内容
+                    if (wordInfo.note) {
+                        document.getElementById('word-note').value = wordInfo.note;
+                    } else {
+                        document.getElementById('word-note').value = '';
+                    }
                 } else {
                     cardText.textContent = token.text || token;
                     cardPhonetic.textContent = '未知';
                     cardDerivation.textContent = '暂无数据';
                     cardTip.textContent = '获取失败，请稍后重试';
+                    currentWordId = null;
+                    updateWordbookUI(false);
+                    document.getElementById('word-note').value = '';
                 }
             } catch (error) {
                 console.error('获取单词/短语信息失败:', error);
@@ -582,10 +620,31 @@
                 cardPhonetic.textContent = '未知';
                 cardDerivation.textContent = '暂无数据';
                 cardTip.textContent = '网络错误，请检查连接';
+                currentWordId = null;
+                updateWordbookUI(false);
+                document.getElementById('word-note').value = '';
             }
             
             // 定位卡片
             positionInfoCard(x, y);
+        }
+        
+        // 更新单词本UI
+        function updateWordbookUI(isMarked) {
+            const statusElement = document.getElementById('wordbook-status');
+            const buttonElement = document.getElementById('toggle-wordbook');
+            
+            if (isMarked) {
+                statusElement.textContent = '已加入单词本';
+                statusElement.style.color = '#2ecc71';
+                buttonElement.textContent = '移除单词本';
+                buttonElement.style.backgroundColor = '#e74c3c';
+            } else {
+                statusElement.textContent = '未加入单词本';
+                statusElement.style.color = '#7f8c8d';
+                buttonElement.textContent = '加入单词本';
+                buttonElement.style.backgroundColor = '#2ecc71';
+            }
         }
 
         // 定位信息卡片
@@ -631,6 +690,60 @@
             
             // 在当前窗口打开详情页面
             window.location.href = `word-detail.html?word=${encodeURIComponent(currentWord)}`;
+        });
+        
+        // 单词本功能相关
+        let currentWordId = null;
+        
+        // 切换单词本状态按钮点击事件
+        document.getElementById('toggle-wordbook').addEventListener('click', async function() {
+            if (!currentWordId) return;
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/wordbook/toggle/${currentWordId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    updateWordbookUI(result.isMarked);
+                    alert(result.message);
+                } else {
+                    alert('操作失败，请稍后重试');
+                }
+            } catch (error) {
+                console.error('单词本操作失败:', error);
+                alert('操作失败，请检查网络连接');
+            }
+        });
+        
+        // 保存笔记按钮点击事件
+        document.getElementById('save-note').addEventListener('click', async function() {
+            if (!currentWordId) return;
+            
+            const note = document.getElementById('word-note').value;
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/wordbook/note/${currentWordId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ note: note })
+                });
+                
+                if (response.ok) {
+                    alert('笔记保存成功');
+                } else {
+                    alert('笔记保存失败，请稍后重试');
+                }
+            } catch (error) {
+                console.error('保存笔记失败:', error);
+                alert('笔记保存失败，请检查网络连接');
+            }
         });
 
         // AI纠错查询按钮点击事件

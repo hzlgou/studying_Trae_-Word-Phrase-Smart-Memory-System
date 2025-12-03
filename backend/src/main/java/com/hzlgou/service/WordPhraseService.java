@@ -18,6 +18,8 @@ public interface WordPhraseService {
      */
     Map<String, Object> getPhraseOrWordInfo(List<String> tokens, int index);
     
+    Map<String, Object> processArticle(String text);
+    
     /**
      * 保存单词
      */
@@ -32,6 +34,11 @@ public interface WordPhraseService {
      * 初始化词库和短语库
      */
     void initDatabase();
+    
+    // 单词本相关方法
+    Map<String, Object> toggleWordBookMark(Long wordId);
+    List<Map<String, Object>> getWordBook();
+    Map<String, Object> updateWordNote(Long wordId, String note);
     
     Optional<Word> findByWord(String word);
 }
