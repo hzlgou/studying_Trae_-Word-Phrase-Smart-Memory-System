@@ -41,4 +41,12 @@ public interface WordPhraseService {
     Map<String, Object> updateWordNote(Long wordId, String note);
     
     Optional<Word> findByWord(String word);
+    
+    /**
+     * 快速搜索单词
+     * @param keyword 搜索关键词
+     * @param searchType 搜索类型: prefix(前缀搜索), substring(子串搜索), exact(精确搜索)
+     * @return 匹配的单词列表
+     */
+    List<Map<String, Object>> searchWords(String keyword, String searchType);
 }

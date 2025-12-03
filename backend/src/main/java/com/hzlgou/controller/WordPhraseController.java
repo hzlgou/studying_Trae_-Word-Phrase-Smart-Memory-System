@@ -235,4 +235,15 @@ public class WordPhraseController {
     public Map<String, Object> getWordDetails(@RequestParam String word) {
         return aiService.getWordDetails(word);
     }
+    
+    /**
+     * 快速搜索单词
+     * @param keyword 搜索关键词
+     * @param type 搜索类型：prefix(前缀搜索), substring(子串搜索), exact(精确搜索)
+     * @return 匹配的单词列表
+     */
+    @GetMapping("/search/words")
+    public List<Word> searchWords(@RequestParam String keyword, @RequestParam(required = false, defaultValue = "prefix") String type) {
+        return wordPhraseService.searchWords(keyword, type);
+    }
 }

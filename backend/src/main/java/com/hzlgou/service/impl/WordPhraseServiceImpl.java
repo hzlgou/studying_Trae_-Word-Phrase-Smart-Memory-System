@@ -9,6 +9,7 @@ import com.hzlgou.repository.WordRepository;
 import com.hzlgou.service.AIService;
 import com.hzlgou.service.WordPhraseService;
 import com.hzlgou.util.CSVUtil;
+import com.hzlgou.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class WordPhraseServiceImpl implements WordPhraseService {
@@ -43,6 +45,12 @@ public class WordPhraseServiceImpl implements WordPhraseService {
     private ResourceLoader resourceLoader;
     
     // 缓存已通过Spring Cache + Caffeine实现，不再使用手动HashMap缓存
+    
+    // 单词前缀树，用于快速搜索
+    private Trie wordTrie;
+    
+    // 短语前缀树，用于快速搜索
+    private Trie phraseTrie;
     
     // 分词正则表达式
     private static final Pattern TOKEN_PATTERN = Pattern.compile("\\w+|[.,!?;:'\"()\\[\\]{}\\-]");
@@ -129,12 +137,20 @@ public class WordPhraseServiceImpl implements WordPhraseService {
     @Override
     public Word saveWord(Word word) {
         Word saved = wordRepository.save(word);
+        // 更新Trie树
+        if (wordTrie != null) {
+            wordTrie.insert(saved.getWord(), saved.getId());
+        }
         return saved;
     }
     
     @Override
     public Phrase savePhrase(Phrase phrase) {
         Phrase saved = phraseRepository.save(phrase);
+        // 更新Trie树
+        if (phraseTrie != null) {
+            phraseTrie.insert(saved.getPhrase(), saved.getId());
+        }
         return saved;
     }
     
@@ -142,6 +158,47 @@ public class WordPhraseServiceImpl implements WordPhraseService {
     @Cacheable(value = "wordCache", key = "#word", unless = "#result == null")
     public Optional<Word> findByWord(String word) {
         return wordRepository.findByWord(word);
+    }
+
+    @Override
+    public List<Word> searchWords(String keyword, String searchType) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        
+        String lowercaseKeyword = keyword.toLowerCase();
+        List<Map<String, Object>> searchResults;
+        
+        // 根据搜索类型使用不同的搜索策略
+        switch (searchType) {
+            case "prefix":
+                searchResults = wordTrie.searchByPrefix(lowercaseKeyword);
+                break;
+            case "substring":
+                searchResults = wordTrie.searchBySubstring(lowercaseKeyword);
+                break;
+            case "exact":
+                if (wordTrie.search(lowercaseKeyword)) {
+                    searchResults = new ArrayList<>();
+                    Map<String, Object> exactMatch = new HashMap<>();
+                    exactMatch.put("word", lowercaseKeyword);
+                    searchResults.add(exactMatch);
+                } else {
+                    searchResults = Collections.emptyList();
+                }
+                break;
+            default:
+                // 默认使用前缀搜索
+                searchResults = wordTrie.searchByPrefix(lowercaseKeyword);
+        }
+        
+        // 将匹配的单词字符串转换为Word对象
+        return searchResults.stream()
+                .map(result -> (String) result.get("word"))
+                .map(wordRepository::findByWord)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
     }
     
     // 从缓存获取单词
@@ -181,6 +238,8 @@ public class WordPhraseServiceImpl implements WordPhraseService {
         initCommonWords();
         // 初始化常用短语
         initCommonPhrases();
+        // 初始化Trie树
+        initTrie();
         // 使用AI生成高频词库和短语库的示例
         // String sampleText = "Sample text for AI analysis"; // 这里可以使用更长的文本
         // List<Word> aiWords = aiService.buildHighFrequencyWordList(sampleText, 50);
@@ -188,6 +247,129 @@ public class WordPhraseServiceImpl implements WordPhraseService {
         // aiWords.forEach(this::saveWord);
         // aiPhrases.forEach(this::savePhrase);
         log.info("initDatabase end");
+    }
+    
+    /**
+     * 初始化Trie树，加载所有单词和短语
+     */
+    private void initTrie() {
+        log.info("Initializing Trie...");
+        
+        // 初始化单词Trie树
+        wordTrie = new Trie();
+        // 加载所有单词到Trie树
+        List<Word> allWords = wordRepository.findAll();
+        for (Word word : allWords) {
+            wordTrie.insert(word.getWord(), word.getId());
+        }
+        log.info("Loaded {} words into Trie", allWords.size());
+        
+        // 初始化短语Trie树
+        phraseTrie = new Trie();
+        // 加载所有短语到Trie树
+        List<Phrase> allPhrases = phraseRepository.findAll();
+        for (Phrase phrase : allPhrases) {
+            phraseTrie.insert(phrase.getPhrase(), phrase.getId());
+        }
+        log.info("Loaded {} phrases into Trie", allPhrases.size());
+        
+        log.info("Trie initialization completed");
+    }
+    
+    /**
+     * 快速搜索单词（前缀匹配）
+     * @param prefix 前缀
+     * @return 匹配的单词列表
+     */
+    public List<Map<String, Object>> searchWordsByPrefix(String prefix) {
+        if (prefix == null || prefix.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // 从Trie树中搜索前缀匹配的单词
+        List<Map<String, Object>> matchingWords = wordTrie.searchByPrefix(prefix);
+        
+        // 丰富单词信息
+        return enrichWordSearchResults(matchingWords);
+    }
+    
+    /**
+     * 快速搜索单词（包含子串）
+     * @param substring 子串
+     * @return 包含子串的单词列表
+     */
+    public List<Map<String, Object>> searchWordsBySubstring(String substring) {
+        if (substring == null || substring.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // 从Trie树中搜索包含子串的单词
+        List<Map<String, Object>> matchingWords = wordTrie.searchBySubstring(substring);
+        
+        // 丰富单词信息
+        return enrichWordSearchResults(matchingWords);
+    }
+    
+    /**
+     * 丰富单词搜索结果
+     * @param matchingWords 匹配的单词列表
+     * @return 丰富后的单词信息列表
+     */
+    private List<Map<String, Object>> enrichWordSearchResults(List<Map<String, Object>> matchingWords) {
+        List<Map<String, Object>> enrichedResults = new ArrayList<>();
+        
+        for (Map<String, Object> wordInfo : matchingWords) {
+            Long wordId = (Long) wordInfo.get("id");
+            Optional<Word> wordOptional = wordRepository.findById(wordId);
+            
+            if (wordOptional.isPresent()) {
+                Word word = wordOptional.get();
+                Map<String, Object> enrichedWordInfo = buildWordResponse(word);
+                
+                // 检查是否在单词本中
+                Optional<WordBook> wordBookOpt = wordBookRepository.findByWordId(wordId);
+                if (wordBookOpt.isPresent()) {
+                    enrichedWordInfo.put("inWordBook", wordBookOpt.get().isMarked());
+                }
+                
+                if (word.getNote() != null) {
+                    enrichedWordInfo.put("note", word.getNote());
+                }
+                
+                enrichedResults.add(enrichedWordInfo);
+            }
+        }
+        
+        return enrichedResults;
+    }
+    
+    /**
+     * 快速搜索短语（前缀匹配）
+     * @param prefix 前缀
+     * @return 匹配的短语列表
+     */
+    public List<Map<String, Object>> searchPhrasesByPrefix(String prefix) {
+        if (prefix == null || prefix.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // 从Trie树中搜索前缀匹配的短语
+        List<Map<String, Object>> matchingPhrases = phraseTrie.searchByPrefix(prefix);
+        
+        // 丰富短语信息
+        List<Map<String, Object>> enrichedResults = new ArrayList<>();
+        
+        for (Map<String, Object> phraseInfo : matchingPhrases) {
+            Long phraseId = (Long) phraseInfo.get("id");
+            Optional<Phrase> phraseOptional = phraseRepository.findById(phraseId);
+            
+            if (phraseOptional.isPresent()) {
+                Phrase phrase = phraseOptional.get();
+                enrichedResults.add(buildPhraseResponse(phrase));
+            }
+        }
+        
+        return enrichedResults;
     }
     
     // 获取N-gram短语
@@ -316,9 +498,10 @@ public class WordPhraseServiceImpl implements WordPhraseService {
             if (existingWord != null) {
                 wordInfo = buildWordResponse(existingWord);
                 // 检查是否在单词本中
-                wordBookRepository.findByWordId(existingWord.getId()).ifPresent(wordBook -> {
-                    wordInfo.put("inWordBook", wordBook.isMarked());
-                });
+                Optional<WordBook> wordBookOpt = wordBookRepository.findByWordId(existingWord.getId());
+                if (wordBookOpt.isPresent()) {
+                    wordInfo.put("inWordBook", wordBookOpt.get().isMarked());
+                }
                 if (existingWord.getNote() != null) {
                     wordInfo.put("note", existingWord.getNote());
                 }
