@@ -1,0 +1,116 @@
+{
+  "functions": [
+    {
+      "name": "generate_dictionary_entry",
+      "description": "生成符合固定格式的英语词典条目数据",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lemma": {
+            "type": "string",
+            "description": "单词原型"
+          },
+          "ipa": {
+            "type": "string",
+            "description": "国际音标"
+          },
+          "kk": {
+            "type": "string",
+            "description": "美式音标"
+          },
+          "pos": {
+            "type": "string",
+            "description": "词性"
+          },
+          "cn": {
+            "type": "string",
+            "description": "中文释义"
+          },
+          "phrases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "phrase": {
+                  "type": "string",
+                  "description": "短语"
+                },
+                "pos": {
+                  "type": "string",
+                  "description": "短语词性"
+                },
+                "cn": {
+                  "type": "string",
+                  "description": "短语中文释义"
+                }
+              },
+              "required": ["phrase", "pos", "cn"]
+            },
+            "description": "常用短语"
+          },
+          "derivatives": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "word": {
+                  "type": "string",
+                  "description": "派生词"
+                },
+                "pos": {
+                  "type": "string",
+                  "description": "派生词词性"
+                },
+                "cn": {
+                  "type": "string",
+                  "description": "派生词中文释义"
+                }
+              },
+              "required": ["word", "pos", "cn"]
+            },
+            "description": "派生词"
+          },
+          "confusers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "word": {
+                  "type": "string",
+                  "description": "易混淆词"
+                },
+                "tip": {
+                  "type": "string",
+                  "description": "区分技巧"
+                }
+              },
+              "required": ["word", "tip"]
+            },
+            "description": "易混淆词及区分技巧"
+          },
+          "mnemonics": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "记忆口诀"
+            },
+            "description": "记忆口诀"
+          },
+          "examples": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "例句（含中文翻译）"
+            },
+            "description": "例句"
+          },
+          "voice_mnemonic": {
+            "type": "string",
+            "description": "中文记忆口诀语音文案（≤15字，谐音/场景）"
+          }
+        },
+        "required": ["lemma", "ipa", "kk", "pos", "cn", "phrases", "derivatives", "confusers", "mnemonics", "examples", "voice_mnemonic"]
+      }
+    }
+  ]
+}

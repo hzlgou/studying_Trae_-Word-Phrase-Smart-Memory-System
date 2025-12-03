@@ -2,8 +2,11 @@ package com.hzlgou.controller;
 
 import com.hzlgou.model.Phrase;
 import com.hzlgou.model.Word;
+import com.hzlgou.service.AIService;
 import com.hzlgou.service.WordPhraseService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -17,6 +20,9 @@ public class WordPhraseController {
     
     @Autowired
     private WordPhraseService wordPhraseService;
+    
+    @Autowired
+    private AIService aiService;
     
     /**
      * 分词接口
@@ -54,8 +60,31 @@ public class WordPhraseController {
      * 添加单词
      */
     @PostMapping("/word")
-    public Word addWord(@RequestBody Word word) {
-        return wordPhraseService.saveWord(word);
+    public ResponseEntity<Word> saveWord(@RequestBody Word word) {
+        Word savedWord = wordPhraseService.saveWord(word);
+        return ResponseEntity.ok(savedWord);
+    }
+
+    @PutMapping("/word")
+    public ResponseEntity<Word> updateWord(@RequestBody Word word) {
+        // 先尝试通过单词内容查找现有记录
+        Optional<Word> existingWordOpt = wordPhraseService.findByWord(word.getWord());
+        
+        if (existingWordOpt.isPresent()) {
+            // 更新现有记录
+            Word existingWord = existingWordOpt.get();
+            existingWord.setLemma(word.getLemma());
+            existingWord.setPronunciation(word.getPronunciation());
+            existingWord.setDerivation(word.getDerivation());
+            existingWord.setTip(word.getTip());
+            
+            Word updatedWord = wordPhraseService.saveWord(existingWord);
+            return ResponseEntity.ok(updatedWord);
+        } else {
+            // 如果不存在，创建新记录
+            Word savedWord = wordPhraseService.saveWord(word);
+            return ResponseEntity.ok(savedWord);
+        }
     }
     
     /**
@@ -64,5 +93,63 @@ public class WordPhraseController {
     @PostMapping("/phrase/add")
     public Phrase addPhrase(@RequestBody Phrase phrase) {
         return wordPhraseService.savePhrase(phrase);
+    }
+    
+    // AI功能API
+    
+    @GetMapping("/ai/pronunciation/word")
+    public ResponseEntity<byte[]> getWordPronunciation(@RequestParam String word) {
+        byte[] audioData = aiService.generateWordPronunciation(word);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header("Content-Disposition", "inline; filename=\"" + word + ".mp3\"")
+                .body(audioData);
+    }
+
+    @GetMapping("/ai/pronunciation/phrase")
+    public ResponseEntity<byte[]> getPhrasePronunciation(@RequestParam String phrase) {
+        byte[] audioData = aiService.generatePhrasePronunciation(phrase);
+        String filename = phrase.replaceAll("\\s+", "-") + ".mp3";
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header("Content-Disposition", "inline; filename=\"" + filename + ".mp3\"")
+                .body(audioData);
+    }
+    
+    @PostMapping("/ai/conjunctions")
+    public Map<String, Object> analyzeConjunctions(@RequestBody Map<String, String> request) {
+        String sentence = request.get("sentence");
+        return aiService.analyzeConjunctions(sentence);
+    }
+    
+    @PostMapping("/ai/translate")
+    public Map<String, String> translateText(@RequestBody Map<String, String> request) {
+        String text = request.get("text");
+        String fromLang = request.getOrDefault("fromLang", "en");
+        String toLang = request.getOrDefault("toLang", "zh");
+        String translation = aiService.translateText(text, fromLang, toLang);
+        Map<String, String> response = new java.util.HashMap<>();
+        response.put("original", text);
+        response.put("translation", translation);
+        return response;
+    }
+    
+    @PostMapping("/ai/build-word-list")
+    public List<Word> buildWordList(@RequestBody Map<String, Object> request) {
+        String text = request.get("text").toString();
+        int limit = Integer.parseInt(request.getOrDefault("limit", "50").toString());
+        return aiService.buildHighFrequencyWordList(text, limit);
+    }
+    
+    @PostMapping("/ai/build-phrase-list")
+    public List<Phrase> buildPhraseList(@RequestBody Map<String, Object> request) {
+        String text = request.get("text").toString();
+        int limit = Integer.parseInt(request.getOrDefault("limit", "50").toString());
+        return aiService.buildHighFrequencyPhraseList(text, limit);
+    }
+    
+    @GetMapping("/ai/word-details")
+    public Map<String, Object> getWordDetails(@RequestParam String word) {
+        return aiService.getWordDetails(word);
     }
 }

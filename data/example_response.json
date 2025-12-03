@@ -1,0 +1,36 @@
+{
+  "lemma": "tough",
+  "ipa": "/tʌf/",
+  "kk": "tʌf",
+  "pos": "adj./n.",
+  "cn": "坚韧的；困难的；粗暴的；恶棍",
+  "phrases": [
+    {"phrase": "tough time", "pos": "n.", "cn": "艰难时刻"},
+    {"phrase": "tough decision", "pos": "n.", "cn": "艰难决定"},
+    {"phrase": "tough as nails", "pos": "adj.", "cn": "坚如磐石"}
+  ],
+  "derivatives": [
+    {"word": "toughness", "pos": "n.", "cn": "韧性；坚固"},
+    {"word": "toughen", "pos": "v.", "cn": "使坚韧"},
+    {"word": "toughly", "pos": "adv.", "cn": "强硬地"},
+    {"word": "tough-minded", "pos": "adj.", "cn": "意志坚强的"}
+  ],
+  "confusers": [
+    {"word": "rough", "tip": "r 开头=粗糙，t 开头=坚韧"},
+    {"word": "enough", "tip": "结尾相同，含义无关：enough=足够"},
+    {"word": "cough", "tip": "c 开头=咳嗽，t 开头=坚韧"},
+    {"word": "through", "tip": "through 穿过去，tough 难过去"},
+    {"word": "though", "tip": "少一个 u，though=虽然"}
+  ],
+  "mnemonics": [
+    "tough 多义记三点：‘坚韧的’布料，‘困难的’题，‘粗暴的’人，一个单词全包揽！",
+    "tough 本身是‘硬难’，加 -ness 变名词；加 -en 动词‘使变硬’；加 -ly 副词‘强硬地’；minded 加上变‘坚强’。",
+    "rough 粗糙 cough 咳，enough 足够 through 过；though 虽然表转折，tough 坚韧难逃脱；开头字母 r/c/t，含义用法各不同！"
+  ],
+  "examples": [
+    "We are facing a tough time, but we'll get through it. 我们正面临艰难时刻，但我们会熬过去的。",
+    "He is known as a tough negotiator. 他以强硬的谈判者著称。",
+    "These shoes are tough as nails; I've worn them for years. 这双鞋坚如磐石，我已经穿了好几年了。"
+  ],
+  "voice_mnemonic": "tough=塔夫：坚韧如塔夫绸"
+}

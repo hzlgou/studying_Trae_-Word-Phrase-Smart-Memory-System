@@ -5,6 +5,7 @@ import com.hzlgou.model.Word;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface WordPhraseService {
     /**
@@ -31,4 +32,6 @@ public interface WordPhraseService {
      * 初始化词库和短语库
      */
     void initDatabase();
+    
+    Optional<Word> findByWord(String word);
 }
